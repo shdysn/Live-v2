@@ -19,7 +19,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        appContainer = AppContainer(applicationContext)
+
+        try {
+            appContainer = AppContainer(applicationContext)
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Failed to initialize AppContainer", e)
+            appContainer = AppContainer(applicationContext)
+        }
 
         setContent {
             MyApplicationTheme {
