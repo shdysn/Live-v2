@@ -75,39 +75,19 @@ class RtmpPublisher(
                 )
 
                 var secondsElapsed = 0L
-                var viewers = Random.nextLong(12, 45)
                 var dropped = 0L
 
                 while (isActive && _telemetry.value.status == StreamStatus.LIVE) {
                     delay(1000)
                     secondsElapsed++
 
-                    // Organic viewer growth
-                    if (secondsElapsed % 5 == 0L) {
-                        viewers += Random.nextLong(-2, 8)
-                        if (viewers < 1) viewers = 1
-                    }
-
-                    // Slight network jitter simulation
-                    val jitterBitrate = (targetBitrateKbps + Random.nextInt(-150, 150)).coerceAtLeast(500)
-                    val jitterFps = (targetFps + Random.nextInt(-1, 2)).coerceIn(24, 60)
-                    if (Random.nextInt(0, 40) == 0) {
-                        dropped += Random.nextLong(1, 4)
-                    }
-
-                    val health = when {
-                        dropped > 20 -> StreamHealth.POOR
-                        jitterBitrate < targetBitrateKbps * 0.7 -> StreamHealth.GOOD
-                        else -> StreamHealth.EXCELLENT
-                    }
-
                     _telemetry.value = _telemetry.value.copy(
                         durationSeconds = secondsElapsed,
-                        currentFps = jitterFps,
-                        currentBitrateKbps = jitterBitrate,
+                        currentFps = targetFps,
+                        currentBitrateKbps = targetBitrateKbps,
                         droppedFrames = dropped,
-                        currentViewers = viewers,
-                        health = health
+                        currentViewers = 0,
+                        health = StreamHealth.EXCELLENT
                     )
                 }
             } catch (e: Exception) {

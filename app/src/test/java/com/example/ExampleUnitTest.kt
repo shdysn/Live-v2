@@ -50,12 +50,10 @@ class ExampleUnitTest {
   }
 
   @Test
-  fun connectAccounts_defaultStateHasShahidLiveTv() {
+  fun connectAccounts_defaultStateInitializesCleanly() {
     val state = pk.livecaster.app.accounts.presentation.ConnectAccountsUiState()
-    assertEquals("Shahid Live TV", state.selectedFacebookPage)
-    assertEquals("Shahid Live TV", state.selectedYouTubeChannel)
-    assertTrue(state.isFacebookConnected)
-    assertTrue(state.isYouTubeConnected)
+    org.junit.Assert.assertFalse(state.isFacebookConnected)
+    org.junit.Assert.assertFalse(state.isYouTubeConnected)
     assertTrue(state.facebookPermissions.contains("View managed Pages"))
     assertTrue(state.facebookPermissions.contains("Create live broadcasts"))
     assertTrue(state.facebookPermissions.contains("Read Page engagement"))

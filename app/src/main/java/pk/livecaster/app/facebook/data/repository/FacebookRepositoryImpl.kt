@@ -14,26 +14,7 @@ class FacebookRepositoryImpl(
     private val tokenStorage: SecureTokenStorage
 ) : FacebookRepository {
 
-    private val _pagesFlow = MutableStateFlow<List<FacebookPage>>(
-        listOf(
-            FacebookPage(
-                id = "fb_page_10928374",
-                name = "LiveCaster Pakistan Official",
-                category = "Broadcasting & Media Production",
-                accessToken = "EAAB...sample_page_token_pk",
-                followersCount = 48500,
-                isDefaultDestination = true
-            ),
-            FacebookPage(
-                id = "fb_page_88291024",
-                name = "Sports HD Live Stream",
-                category = "Sports Channel",
-                accessToken = "EAAB...sample_page_token_sports",
-                followersCount = 120400,
-                isDefaultDestination = false
-            )
-        )
-    )
+    private val _pagesFlow = MutableStateFlow<List<FacebookPage>>(emptyList())
 
     override fun getPages(): Flow<List<FacebookPage>> = _pagesFlow
 

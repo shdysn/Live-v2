@@ -212,6 +212,7 @@ fun BroadcastSetupScreen(
                     value = uiState.rtmpUrl,
                     onValueChange = { viewModel.updateRtmpUrl(it) },
                     label = { Text("RTMP Server Endpoint") },
+                    placeholder = { Text("e.g. rtmp://a.rtmp.youtube.com/live2") },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -224,6 +225,7 @@ fun BroadcastSetupScreen(
                     value = uiState.streamKey,
                     onValueChange = { viewModel.updateStreamKey(it) },
                     label = { Text("Stream Key") },
+                    placeholder = { Text("Enter your live stream key") },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()

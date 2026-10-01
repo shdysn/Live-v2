@@ -47,25 +47,20 @@ class DashboardViewModel(
     private fun loadData() {
         viewModelScope.launch {
             getBroadcastsUseCase().collect { list ->
-                // If list is empty, initialize default sample broadcasts for initial launch demo
-                if (list.isEmpty()) {
-                    initSampleBroadcasts()
-                } else {
-                    val active = list.find { it.status == BroadcastStatus.LIVE }
-                    val totalAirtime = list.sumOf { it.durationSeconds }
-                    val peak = list.maxOfOrNull { it.peakViewers } ?: 0L
+                val active = list.find { it.status == BroadcastStatus.LIVE }
+                val totalAirtime = list.sumOf { it.durationSeconds }
+                val peak = list.maxOfOrNull { it.peakViewers } ?: 0L
 
-                    _uiState.value = _uiState.value.copy(
-                        broadcasts = list,
-                        activeBroadcast = active,
-                        stats = DashboardStats(
-                            totalStreams = list.size,
-                            totalAirtimeSeconds = totalAirtime,
-                            peakAudience = peak,
-                            activeDestinationsCount = 4
-                        )
+                _uiState.value = _uiState.value.copy(
+                    broadcasts = list,
+                    activeBroadcast = active,
+                    stats = DashboardStats(
+                        totalStreams = list.size,
+                        totalAirtimeSeconds = totalAirtime,
+                        peakAudience = peak,
+                        activeDestinationsCount = if (list.isNotEmpty()) 2 else 0
                     )
-                }
+                )
             }
         }
 
@@ -79,39 +74,6 @@ class DashboardViewModel(
             youtubeRepository.getChannels().collect { channels ->
                 _uiState.value = _uiState.value.copy(ytChannelsCount = channels.size)
             }
-        }
-    }
-
-    private fun initSampleBroadcasts() {
-        viewModelScope.launch {
-            val sample1 = Broadcast(
-                title = "Live Studio Launch Broadcast",
-                description = "Pakistan Premiere Live Broadcast session testing multi-destination relay",
-                rtmpUrl = "rtmp://live.livecaster.pk/live",
-                streamKey = "pk_studio_primary_01",
-                platform = PlatformType.MULTI_DESTINATION,
-                status = BroadcastStatus.ENDED,
-                durationSeconds = 3840,
-                resolution = "1080p",
-                bitrateKbps = 6000,
-                fps = 60,
-                peakViewers = 4280
-            )
-            val sample2 = Broadcast(
-                title = "Sports & Gaming Live Stream",
-                description = "Direct RTMP ingest to Facebook and YouTube",
-                rtmpUrl = "rtmps://live-api-s.facebook.com:443/rtmp/",
-                streamKey = "fb_sports_relay_77",
-                platform = PlatformType.FACEBOOK,
-                status = BroadcastStatus.ENDED,
-                durationSeconds = 1920,
-                resolution = "720p",
-                bitrateKbps = 3500,
-                fps = 30,
-                peakViewers = 1890
-            )
-            broadcastRepository.createBroadcast(sample1)
-            broadcastRepository.createBroadcast(sample2)
         }
     }
 

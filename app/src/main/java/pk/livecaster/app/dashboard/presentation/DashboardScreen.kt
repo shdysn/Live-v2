@@ -315,11 +315,21 @@ fun DashboardScreen(
                                         color = TextPrimary
                                     )
                                 )
+                                val statusText = when {
+                                    uiState.fbPagesCount > 0 && uiState.ytChannelsCount > 0 ->
+                                        "✓ Facebook: Linked • ✓ YouTube: Linked"
+                                    uiState.fbPagesCount > 0 ->
+                                        "✓ Facebook: Linked • YouTube: Not connected"
+                                    uiState.ytChannelsCount > 0 ->
+                                        "Facebook: Not connected • ✓ YouTube: Linked"
+                                    else ->
+                                        "No accounts connected yet. Tap to set up."
+                                }
                                 Text(
-                                    text = "✓ Facebook: Live • ✓ YouTube: Live",
+                                    text = statusText,
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontWeight = FontWeight.SemiBold,
-                                        color = StudioGreen
+                                        color = if (uiState.fbPagesCount > 0 || uiState.ytChannelsCount > 0) StudioGreen else TextMuted
                                     )
                                 )
                             }
@@ -388,12 +398,70 @@ fun DashboardScreen(
                 }
             }
 
-            items(uiState.broadcasts, key = { it.id }) { broadcast ->
-                BroadcastHistoryCard(
-                    broadcast = broadcast,
-                    onOpenStudio = { onNavigateToStudio(broadcast.id) },
-                    onDelete = { viewModel.deleteBroadcast(broadcast.id) }
-                )
+            if (uiState.broadcasts.isEmpty()) {
+                item {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, StudioBorder, RoundedCornerShape(16.dp)),
+                        colors = CardDefaults.cardColors(containerColor = StudioCard),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(LiveRed.copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Videocam,
+                                    contentDescription = null,
+                                    tint = LiveRed,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "Ready to Broadcast",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimary
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "No stream sessions yet. Connect your channel or configure a Custom RTMP stream to go live.",
+                                style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = onNavigateToSetup,
+                                colors = ButtonDefaults.buttonColors(containerColor = LiveRed),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("New Live Stream", style = MaterialTheme.typography.labelMedium)
+                            }
+                        }
+                    }
+                }
+            } else {
+                items(uiState.broadcasts, key = { it.id }) { broadcast ->
+                    BroadcastHistoryCard(
+                        broadcast = broadcast,
+                        onOpenStudio = { onNavigateToStudio(broadcast.id) },
+                        onDelete = { viewModel.deleteBroadcast(broadcast.id) }
+                    )
+                }
             }
         }
     }

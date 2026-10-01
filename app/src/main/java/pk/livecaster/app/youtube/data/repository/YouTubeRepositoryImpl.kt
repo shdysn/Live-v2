@@ -14,24 +14,7 @@ class YouTubeRepositoryImpl(
     private val tokenStorage: SecureTokenStorage
 ) : YouTubeRepository {
 
-    private val _channelsFlow = MutableStateFlow<List<YouTubeChannel>>(
-        listOf(
-            YouTubeChannel(
-                id = "UC_livecaster_official_pk",
-                title = "LiveCaster Pakistan Stream Studio",
-                description = "Primary broadcast feed for LiveCaster studios and multi-camera live events",
-                customUrl = "@LiveCasterPK",
-                subscriberCount = 89200
-            ),
-            YouTubeChannel(
-                id = "UC_news_live_feed_urdu",
-                title = "Urdu News 24/7 Live Stream",
-                description = "Live Urdu commentary and breaking broadcast streams",
-                customUrl = "@UrduLiveCast",
-                subscriberCount = 245000
-            )
-        )
-    )
+    private val _channelsFlow = MutableStateFlow<List<YouTubeChannel>>(emptyList())
 
     override fun getChannels(): Flow<List<YouTubeChannel>> = _channelsFlow
 

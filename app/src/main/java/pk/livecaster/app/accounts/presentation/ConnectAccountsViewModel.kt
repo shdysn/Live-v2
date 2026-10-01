@@ -13,15 +13,10 @@ import pk.livecaster.app.youtube.domain.repository.YouTubeRepository
 data class ConnectAccountsUiState(
     // Facebook section state
     val isFacebookLoggedIn: Boolean = false,
-    val selectedFacebookPage: String = "Shahid Live TV",
-    val availableFacebookPages: List<String> = listOf(
-        "Shahid Live TV",
-        "LiveCaster Pakistan Official",
-        "Sports HD Live Stream",
-        "Urdu News HD"
-    ),
-    val isFacebookConnected: Boolean = true,
-    val facebookConnectedName: String = "Shahid Live TV",
+    val selectedFacebookPage: String = "",
+    val availableFacebookPages: List<String> = emptyList(),
+    val isFacebookConnected: Boolean = false,
+    val facebookConnectedName: String = "",
     val facebookPermissions: List<String> = listOf(
         "View managed Pages",
         "Create live broadcasts",
@@ -30,15 +25,10 @@ data class ConnectAccountsUiState(
 
     // YouTube section state
     val isGoogleLoggedIn: Boolean = false,
-    val selectedYouTubeChannel: String = "Shahid Live TV",
-    val availableYouTubeChannels: List<String> = listOf(
-        "Shahid Live TV",
-        "LiveCaster Pakistan Stream Studio",
-        "Urdu News 24/7 Live Stream",
-        "Shahid Tech Live"
-    ),
-    val isYouTubeConnected: Boolean = true,
-    val youtubeConnectedName: String = "Shahid Live TV",
+    val selectedYouTubeChannel: String = "",
+    val availableYouTubeChannels: List<String> = emptyList(),
+    val isYouTubeConnected: Boolean = false,
+    val youtubeConnectedName: String = "",
     val youTubePermissions: List<String> = listOf(
         "View YouTube Channel",
         "Create and manage live broadcasts",
@@ -59,24 +49,35 @@ class ConnectAccountsViewModel(
     val uiState: StateFlow<ConnectAccountsUiState> = _uiState.asStateFlow()
 
     init {
-        // Ensure Shahid Live TV exists in repositories on startup
         viewModelScope.launch {
-            facebookRepository.linkPage(
-                pageName = "Shahid Live TV",
-                pageId = "fb_page_shahid_live",
-                pageToken = "EAAB_shahid_live_token"
-            )
-            youtubeRepository.linkChannel(
-                title = "Shahid Live TV",
-                channelId = "UC_shahid_live_tv",
-                customUrl = "@ShahidLiveTV"
-            )
+            facebookRepository.getPages().collect { pages ->
+                val connected = pages.firstOrNull()
+                _uiState.value = _uiState.value.copy(
+                    availableFacebookPages = pages.map { it.name },
+                    selectedFacebookPage = if (_uiState.value.selectedFacebookPage.isBlank()) (pages.firstOrNull()?.name ?: "") else _uiState.value.selectedFacebookPage,
+                    isFacebookConnected = connected != null,
+                    facebookConnectedName = connected?.name ?: ""
+                )
+            }
+        }
+
+        viewModelScope.launch {
+            youtubeRepository.getChannels().collect { channels ->
+                val connected = channels.firstOrNull()
+                _uiState.value = _uiState.value.copy(
+                    availableYouTubeChannels = channels.map { it.title },
+                    selectedYouTubeChannel = if (_uiState.value.selectedYouTubeChannel.isBlank()) (channels.firstOrNull()?.title ?: "") else _uiState.value.selectedYouTubeChannel,
+                    isYouTubeConnected = connected != null,
+                    youtubeConnectedName = connected?.title ?: ""
+                )
+            }
         }
     }
 
     fun continueWithFacebook() {
         _uiState.value = _uiState.value.copy(
             isFacebookLoggedIn = true,
+            selectedFacebookPage = _uiState.value.selectedFacebookPage.ifBlank { "My Facebook Live Page" },
             message = "Facebook account authenticated. Select Page to link."
         )
     }
@@ -93,7 +94,7 @@ class ConnectAccountsViewModel(
 
     fun connectFacebookPage() {
         viewModelScope.launch {
-            val pageName = _uiState.value.selectedFacebookPage
+            val pageName = _uiState.value.selectedFacebookPage.ifBlank { "Live Broadcast Page" }
             facebookRepository.linkPage(
                 pageName = pageName,
                 pageId = "fb_page_${pageName.replace(" ", "_").lowercase()}",
@@ -104,22 +105,29 @@ class ConnectAccountsViewModel(
                 isFacebookConnected = true,
                 facebookConnectedName = pageName,
                 isFacebookLoggedIn = false,
-                message = "Facebook: Connected to $pageName (Live)"
+                message = "Facebook: Connected to $pageName"
             )
         }
     }
 
     fun disconnectFacebook() {
-        _uiState.value = _uiState.value.copy(
-            isFacebookConnected = false,
-            isFacebookLoggedIn = false,
-            message = "Facebook Page disconnected"
-        )
+        viewModelScope.launch {
+            val pageName = _uiState.value.facebookConnectedName
+            facebookRepository.unlinkPage(pageName)
+            tokenStorage.saveFacebookToken("")
+            _uiState.value = _uiState.value.copy(
+                isFacebookConnected = false,
+                facebookConnectedName = "",
+                isFacebookLoggedIn = false,
+                message = "Facebook Page disconnected"
+            )
+        }
     }
 
     fun continueWithGoogle() {
         _uiState.value = _uiState.value.copy(
             isGoogleLoggedIn = true,
+            selectedYouTubeChannel = _uiState.value.selectedYouTubeChannel.ifBlank { "My YouTube Live Channel" },
             message = "Google account authenticated. Select Channel to link."
         )
     }
@@ -136,7 +144,7 @@ class ConnectAccountsViewModel(
 
     fun connectYouTubeChannel() {
         viewModelScope.launch {
-            val channelName = _uiState.value.selectedYouTubeChannel
+            val channelName = _uiState.value.selectedYouTubeChannel.ifBlank { "Live Stream Channel" }
             youtubeRepository.linkChannel(
                 title = channelName,
                 channelId = "UC_${channelName.replace(" ", "_").lowercase()}",
@@ -147,17 +155,23 @@ class ConnectAccountsViewModel(
                 isYouTubeConnected = true,
                 youtubeConnectedName = channelName,
                 isGoogleLoggedIn = false,
-                message = "YouTube: Connected to $channelName (Live)"
+                message = "YouTube: Connected to $channelName"
             )
         }
     }
 
     fun disconnectYouTube() {
-        _uiState.value = _uiState.value.copy(
-            isYouTubeConnected = false,
-            isGoogleLoggedIn = false,
-            message = "YouTube Channel disconnected"
-        )
+        viewModelScope.launch {
+            val channelName = _uiState.value.youtubeConnectedName
+            youtubeRepository.unlinkChannel(channelName)
+            tokenStorage.saveYouTubeToken("")
+            _uiState.value = _uiState.value.copy(
+                isYouTubeConnected = false,
+                youtubeConnectedName = "",
+                isGoogleLoggedIn = false,
+                message = "YouTube Channel disconnected"
+            )
+        }
     }
 
     fun clearMessage() {

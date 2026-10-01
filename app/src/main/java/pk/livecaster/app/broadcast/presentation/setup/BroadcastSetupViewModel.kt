@@ -16,11 +16,11 @@ import pk.livecaster.app.facebook.domain.repository.FacebookRepository
 import pk.livecaster.app.youtube.domain.repository.YouTubeRepository
 
 data class BroadcastSetupUiState(
-    val title: String = "LiveCaster Studio Broadcast",
-    val description: String = "Broadcasting live with LiveCaster Android Studio",
-    val platform: PlatformType = PlatformType.CUSTOM_RTMP,
-    val rtmpUrl: String = "rtmp://live.livecaster.pk/live",
-    val streamKey: String = "live_stream_key_pk1",
+    val title: String = "",
+    val description: String = "",
+    val platform: PlatformType = PlatformType.YOUTUBE,
+    val rtmpUrl: String = "rtmp://a.rtmp.youtube.com/live2",
+    val streamKey: String = "",
     val resolution: String = "720p",
     val bitrateKbps: Int = StreamConstants.DEFAULT_BITRATE_KBPS,
     val fps: Int = StreamConstants.DEFAULT_FPS,
@@ -47,16 +47,16 @@ class BroadcastSetupViewModel(
     }
 
     fun updatePlatform(platform: PlatformType) {
-        val (url, key) = when (platform) {
-            PlatformType.FACEBOOK -> Pair("rtmps://live-api-s.facebook.com:443/rtmp/", "fb_live_key_${System.currentTimeMillis() % 100000}")
-            PlatformType.YOUTUBE -> Pair("rtmp://a.rtmp.youtube.com/live2", "yt_live_key_${System.currentTimeMillis() % 100000}")
-            PlatformType.CUSTOM_RTMP -> Pair("rtmp://live.livecaster.pk/live", "live_key_custom")
-            PlatformType.MULTI_DESTINATION -> Pair("rtmp://relay.livecaster.pk/multi", "multi_dest_key")
+        val defaultUrl = when (platform) {
+            PlatformType.FACEBOOK -> "rtmps://live-api-s.facebook.com:443/rtmp/"
+            PlatformType.YOUTUBE -> "rtmp://a.rtmp.youtube.com/live2"
+            PlatformType.CUSTOM_RTMP -> ""
+            PlatformType.MULTI_DESTINATION -> "rtmps://live-api-s.facebook.com:443/rtmp/"
         }
         _uiState.value = _uiState.value.copy(
             platform = platform,
-            rtmpUrl = url,
-            streamKey = key
+            rtmpUrl = defaultUrl,
+            errorMessage = null
         )
     }
 
@@ -78,14 +78,31 @@ class BroadcastSetupViewModel(
 
     fun createAndStartBroadcast(onSuccess: (broadcastId: Long) -> Unit) {
         val current = _uiState.value
+        val url = current.rtmpUrl.trim()
+        val key = current.streamKey.trim()
+
+        if (url.isBlank()) {
+            _uiState.value = current.copy(errorMessage = "Please enter RTMP server endpoint")
+            return
+        }
+
+        if (key.isBlank()) {
+            _uiState.value = current.copy(errorMessage = "Please enter your Live Stream Key")
+            return
+        }
+
+        val streamTitle = current.title.trim().ifBlank {
+            "Live Stream (${current.platform.name})"
+        }
+
         viewModelScope.launch {
             _uiState.value = current.copy(isLoading = true, errorMessage = null)
 
             val broadcast = Broadcast(
-                title = current.title.trim(),
+                title = streamTitle,
                 description = current.description.trim(),
-                rtmpUrl = current.rtmpUrl.trim(),
-                streamKey = current.streamKey.trim(),
+                rtmpUrl = url,
+                streamKey = key,
                 platform = current.platform,
                 status = BroadcastStatus.DRAFT,
                 resolution = current.resolution,
